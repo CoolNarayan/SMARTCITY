@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart City Digital Twin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --admin-bg:#0a0f1c;
+  --admin-panel:#111a2c;
+  --admin-panel-2:#0e1626;
+  --admin-border:#1e2a42;
+  --admin-text:#e7ecf6;
+  --admin-sub:#7c8aad;
+  --blue:#3b82f6;
+  --blue-soft:#1d3a63;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --purple:#a855f7;
+  --cyan:#06b6d4;
+
+  --cit-bg:#f5f7fb;
+  --cit-panel:#ffffff;
+  --cit-border:#e6e9f2;
+  --cit-text:#101828;
+  --cit-sub:#667085;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif; overflow-x: hidden;}
+
+/* ===== PORTALS & AUTH ===== */
+.portal{display:none;min-height:100vh; position: relative;}
+.portal.active{display:flex;}
+
+.auth-bg {
+  background: var(--admin-bg);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(59,130,246,0.1), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(139,92,246,0.1), transparent 25%);
+  justify-content: center;
+  align-items: center;
+  color: var(--admin-text);
+  padding: 20px;
+}
+.auth-card {
+  background: var(--admin-panel);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  text-align: center;
+  position: relative;
+}
+.auth-card .logo {
+  width: 54px; height: 54px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin: 0 auto 16px;
+}
+.auth-card h2 { font-size: 22px; margin-bottom: 6px; }
+.auth-card p.sub { color: var(--admin-sub); font-size: 14px; margin-bottom: 24px; }
+.auth-card .field { text-align: left; margin-bottom: 16px; }
+.auth-card .field label { display: block; font-size: 12px; color: var(--admin-sub); margin-bottom: 6px; }
+.auth-card .field input, .auth-card .field select {
+  width: 100%; background: #0c1526; border: 1px solid var(--admin-border); 
+  border-radius: 9px; padding: 12px 14px; color: #fff; font-size: 14px; font-family: inherit;
+  transition: 0.2s;
+}
+.auth-card .field input:focus, .auth-card .field select:focus {
+  outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+}
+.auth-links { margin-top: 24px; font-size: 13.5px; color: var(--admin-sub); }
+.auth-links a { color: var(--blue); text-decoration: none; font-weight: 600; }
+.auth-links a:hover { text-decoration: underline; }
+
+/* Language Dropdown */
+.lang-selector { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--cit-border); background: #f5f7fb; color: var(--cit-text); font-size: 12.5px; font-weight: 600; cursor: pointer; outline: none; }
+.lang-selector-dark { background: rgba(12, 21, 38, 0.8); color: var(--admin-sub); border: 1px solid var(--admin-border); }
+
+/* Mobile Menu Button */
+.mobile-menu-btn { display: none; background: transparent; border: none; font-size: 24px; cursor: pointer; margin-right: 15px; }
+#admin .mobile-menu-btn { color: #fff; }
+#citizen .mobile-menu-btn { color: #101828; }
+
+/* ============ ADMIN PORTAL ============ */
+#admin{background:var(--admin-bg);color:var(--admin-text);}
+#admin .sidebar{
+  width:230px;background:var(--admin-panel-2);border-right:1px solid var(--admin-border);
+  display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;height:100vh;position:sticky;top:0;overflow-y:auto;
+  transition: left 0.3s ease;
+}
+#admin .brand{display:flex;align-items:center;gap:10px;padding:0 20px 20px;border-bottom:1px solid var(--admin-border);margin-bottom:10px;}
+#admin .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;}
+#admin .brand div span{display:block;}
+#admin .brand .t1{font-weight:700;font-size:15px;}
+#admin .brand .t2{font-size:11px;color:var(--admin-sub);}
+#admin nav{flex:1;padding:0 10px;}
+#admin nav button{
+  width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:2px;
+  border:none;background:transparent;color:#a9b4cc;border-radius:8px;font-size:13.5px;cursor:pointer;text-align:left;transition:.15s;
+}
+#admin nav button:hover{background:#16213a;color:#fff;}
+#admin nav button.active{background:var(--blue-soft);color:#fff;box-shadow:inset 3px 0 0 var(--blue);}
+#admin nav .icon{width:18px;text-align:center;}
+#admin .sidebar-foot{padding:14px 16px;margin:10px 12px 0;border-radius:12px;background:linear-gradient(160deg,#152037,#0e1626);border:1px solid var(--admin-border);font-size:12px;color:var(--admin-sub);}
+#admin .sidebar-foot b{color:#fff;display:block;font-size:13px;margin-bottom:4px;}
+
+#admin .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+#admin .topbar{
+  height:64px;border-bottom:1px solid var(--admin-border);display:flex;align-items:center;
+  padding:0 24px;gap:16px;background:var(--admin-panel-2);position:sticky;top:0;z-index:5;
+}
+#admin .topbar .search{
+  flex:1;background:#0c1526;border:1px solid var(--admin-border);border-radius:10px;
+  padding:9px 14px;color:#8894b3;font-size:13px;display:flex;align-items:center;gap:8px;
+}
+#admin .topbar .right{display:flex;align-items:center;gap:16px;}
+#admin .bell{position:relative;font-size:18px;cursor:pointer;}
+#admin .bell .dot{position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;}
+#admin .who{display:flex;align-items:center;gap:8px;font-size:13px;}
+#admin .who .av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-weight:700;}
+#admin .who small{display:block;color:var(--admin-sub);font-size:10.5px;}
+
+#admin .content{padding:22px 26px 60px;}
+#admin h1.page-title{font-size:19px;margin-bottom:4px;}
+#admin p.page-sub{color:var(--admin-sub);font-size:13px;margin-bottom:18px;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px;}
+.kpi{background:var(--admin-panel);border:1px solid var(--admin-border);border-radius:14px;padding:16px;}
+.kpi .top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.kpi .ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.kpi .lbl{font-size:12px;color:var(--admin-sub);}
+.kpi .val{font-size:24px;font-weight:700;}
+.kpi .stat{font-size:11.5px;margin-top:6px;display:flex;align-items:center;gap:5px;}
+.dotlive{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 0 3px rgba(34,197,94,.2);}
+
+.grid2{display:grid;grid-template-columns:2.1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+
+.panel{background:var(--admin-panel);border:1px solid var(--admin-border);border-radius:14px;padding:18px;}
+.panel h3{font-size:14.5px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.panel h3 a{font-size:12px;color:var(--blue);text-decoration:none;font-weight:500;}
+
+/* Map wrappers */
+.citymap{
+  position:relative;border-radius:12px;overflow:hidden;height:340px;
+  border:1px solid var(--admin-border);
+}
+.citymap-light{
+  height:300px;border-radius:12px;position:relative;overflow:hidden;border:1px solid var(--cit-border);
+}
+
+.alert-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--admin-border);}
+.alert-item:last-child{border:none;}
+.alert-item .ic{width:32px;height:32px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.alert-item .tt{font-size:12.5px;font-weight:600;}
+.alert-item .dd{font-size:11.5px;color:var(--admin-sub);}
+.alert-item .tm{font-size:10.5px;color:#556;white-space:nowrap;margin-left:auto;}
+
+.badge{padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;}
+.b-green{background:rgba(34,197,94,.15);color:#4ade80;}
+.b-amber{background:rgba(245,158,11,.15);color:#fbbf24;}
+.b-red{background:rgba(239,68,68,.15);color:#f87171;}
+.b-blue{background:rgba(59,130,246,.15);color:#60a5fa;}
+
+/* Table Responsive Wrapper */
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px; min-width: 600px;}
+table.dt th{text-align:left;color:var(--admin-sub);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--admin-border);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;}
+table.dt td{padding:11px 10px;border-bottom:1px solid var(--admin-border);}
+table.dt tr:last-child td{border:none;}
+.bar-track{background:#1a2340;border-radius:6px;height:7px;overflow:hidden;width:100px;}
+.bar-fill{height:100%;border-radius:6px;}
+
+.section{display:none;}
+.section.active{display:block;}
+
+.btn{background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;padding:12px 24px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:0.2s;}
+.btn:hover{box-shadow:0 6px 15px rgba(59,130,246,0.3); transform:translateY(-1px);}
+.btn.ghost{background:transparent;border:1px solid var(--admin-border);color:#c7d0e6;}
+.btn.ghost:hover{background:rgba(255,255,255,0.05);box-shadow:none;}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#111a2c;border:1px solid var(--admin-border);border-left:4px solid var(--green);padding:14px 18px;border-radius:10px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:2000;display:none;color:#fff;}
+
+/* ============ CITIZEN PORTAL ============ */
+#citizen{background:var(--cit-bg);color:var(--cit-text);}
+#citizen .sidebar{
+  width:220px;background:#fff;border-right:1px solid var(--cit-border);padding:20px 0;height:100vh;
+  position:sticky;top:0;flex-shrink:0;overflow-y:auto;
+  transition: left 0.3s ease;
+}
+#citizen .brand{display:flex;align-items:center;gap:10px;padding:0 20px 18px;border-bottom:1px solid var(--cit-border);margin-bottom:10px;}
+#citizen .brand .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;}
+#citizen .brand .t1{font-weight:700;font-size:14.5px;color:#101828;}
+#citizen .brand .t2{font-size:10.5px;color:#3b82f6;font-weight:600;}
+#citizen nav{padding:0 10px;}
+#citizen nav button{
+  width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:2px;
+  border:none;background:transparent;color:#475467;border-radius:9px;font-size:13.5px;cursor:pointer;text-align:left;
+}
+#citizen nav button:hover{background:#f0f4fb;}
+#citizen nav button.active{background:#eaf1ff;color:#2563eb;font-weight:600;}
+#citizen .promo{margin:16px 12px 0;padding:16px;border-radius:14px;background:linear-gradient(160deg,#eef4ff,#f7faff);border:1px solid #dfe9fb;font-size:12px;color:#475467;}
+#citizen .promo b{display:block;color:#101828;font-size:13.5px;margin-bottom:8px;}
+#citizen .promo button{margin-top:10px;width:100%;background:#2563eb;color:#fff;border:none;padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;}
+
+#citizen .main{flex:1;min-width:0;}
+#citizen .topbar{height:66px;background:#fff;border-bottom:1px solid var(--cit-border);display:flex;align-items:center;padding:0 26px;gap:16px;position:sticky;top:0;z-index:5;}
+#citizen .topbar .search{flex:1;background:#f5f7fb;border:1px solid var(--cit-border);border-radius:10px;padding:9px 14px;color:#98a2b3;font-size:13px;}
+#citizen .who{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;}
+#citizen .who .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#818cf8,#38bdf8);}
+#citizen .bell{position:relative;font-size:17px;}
+#citizen .bell .dot{position:absolute;top:-4px;right:-6px;background:#ef4444;color:#fff;font-size:9px;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;}
+.btn-logout-cit {background:#fff0f0;color:#ef4444;border:1px solid #fecaca;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;}
+.btn-logout-cit:hover {background:#fee2e2;}
+
+#citizen .content{padding:24px 26px 60px;}
+.hero{
+  background:linear-gradient(120deg,#1e3a8a,#2563eb 55%,#0891b2);border-radius:18px;padding:30px 32px;color:#fff;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;position:relative;overflow:hidden;
+}
+.hero::after{content:'';position:absolute;inset:0;background:
+ radial-gradient(circle at 85% 20%, rgba(255,255,255,.12), transparent 45%),
+ radial-gradient(circle at 20% 90%, rgba(255,255,255,.08), transparent 40%);}
+.hero h1{font-size:26px;margin-bottom:6px;position:relative;}
+.hero p{opacity:.85;font-size:13.5px;position:relative;}
+.hero .weatherbox{background:rgba(255,255,255,.12);border-radius:14px;padding:14px 18px;text-align:center;min-width:130px;position:relative;backdrop-filter:blur(4px);}
+.hero .weatherbox .temp{font-size:26px;font-weight:700;}
+
+.svc-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px;}
+.svc{background:#fff;border:1px solid var(--cit-border);border-radius:14px;padding:16px;cursor:pointer;transition:.15s;}
+.svc:hover{box-shadow:0 8px 22px rgba(16,24,40,.08);transform:translateY(-2px);}
+.svc .ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px;}
+.svc .t{font-weight:700;font-size:13px;margin-bottom:3px;}
+.svc .d{font-size:11.5px;color:var(--cit-sub);}
+
+.cpanel{background:#fff;border:1px solid var(--cit-border);border-radius:14px;padding:18px;}
+.cpanel h3{font-size:14.5px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.cpanel h3 a{font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;}
+.upd-item{padding:10px 0;border-bottom:1px solid var(--cit-border);}
+.upd-item:last-child{border:none;}
+.upd-item .t{font-size:13px;font-weight:600;}
+.upd-item .d{font-size:12px;color:var(--cit-sub);margin-top:2px;}
+.req-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--cit-border);}
+.req-item:last-child{border:none;}
+.req-item .t{font-size:13px;font-weight:600;}
+.req-item .l{font-size:11.5px;color:var(--cit-sub);}
+
+.emg-card{background:linear-gradient(135deg,#fee2e2,#fff);border:1px solid #fecaca;border-radius:14px;padding:20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.emg-btn{background:#dc2626;color:#fff;border:none;padding:12px 22px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
+.contact-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.contact-card{background:#fff;border:1px solid var(--cit-border);border-radius:14px;padding:18px;text-align:center;}
+.contact-card .n{font-size:22px;font-weight:700;color:#2563eb;margin:6px 0;}
+
+.cform .field{margin-bottom:14px;}
+.cform label{display:block;font-size:12.5px;font-weight:600;color:#344054;margin-bottom:6px;}
+.cform input,.cform select,.cform textarea{width:100%;border:1px solid var(--cit-border);border-radius:9px;padding:10px 12px;font-size:13px;font-family:inherit;background:#fafbfc;}
+.cbtn{background:#2563eb;color:#fff;border:none;padding:11px 22px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;}
+
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#2a3550;border-radius:4px;}
+#citizen ::-webkit-scrollbar-thumb{background:#d0d5dd;}
+
+/* ================= RESPONSIVE MEDIA QUERIES (TABLETS & MOBILE) ================= */
+@media(max-width:1300px){
+  .kpi-row { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+@media(max-width:1100px){
+  .grid2, .grid3 { grid-template-columns: 1fr !important; }
+  .svc-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media(max-width: 900px){
+  .contact-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-row { grid-template-columns: repeat(2, 1fr) !important; }
+  .svc-grid { grid-template-columns: repeat(3, 1fr); }
+  
+  /* Make sidebars slide out on mobile */
+  .mobile-menu-btn { display: block; }
+  .sidebar {
+    position: fixed !important;
+    left: -260px;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+  }
+  .sidebar.open { left: 0; }
+  
+  /* Topbar adjustments */
+  .topbar { padding: 0 16px; gap: 10px; }
+  .topbar .search { font-size: 11px; padding: 8px 10px; }
+  .content { padding: 16px 16px 80px; }
+}
+
+@media(max-width: 600px){
+  .auth-card { margin: 15px; padding: 30px 20px; }
+  .hero { flex-direction: column; text-align: center; gap: 15px; padding: 20px; }
+  .svc-grid { grid-template-columns: repeat(2, 1fr); }
+  .contact-grid { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: 1fr !important; }
+  .emg-card { flex-direction: column; gap: 15px; text-align: center; }
+  .topbar .search { display: none; /* Hide search bar to save space on tiny screens */ }
+  .who span { display: none; /* Hide user name text on tiny screens */ }
+  .who .av { margin-right: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN PORTAL ==================== -->
+<div id="login" class="portal active auth-bg">
+  <div style="position: absolute; top: 20px; right: 26px;">
+    <select class="lang-selector lang-selector-dark" onchange="changeLanguage(this.value)">
+      <option value="en">English</option>
+      <option value="hi">हिंदी (Hindi)</option>
+      <option value="mr">मराठी (Marathi)</option>
+    </select>
+  </div>
+  <div class="auth-card">
+    <div class="logo">🏙️</div>
+    <h2 data-i18n="login_title">Smart City Login</h2>
+    <p class="sub" data-i18n="login_sub">Access your personalized dashboard</p>
+    
+    <form onsubmit="return handleLogin(event)">
+      <div class="field">
+        <label data-i18n="lbl_role">Select Role</label>
+        <select id="loginRole">
+          <option value="citizen" data-i18n="role_citizen">Citizen Portal</option>
+          <option value="admin" data-i18n="role_admin">Administrator Portal</option>
+        </select>
+      </div>
+      <div class="field">
+        <label data-i18n="lbl_email_user">Email or Username</label>
+        <input type="text" id="loginIdentifier" required placeholder="Admin username or Citizen email" data-i18n="ph_email_user">
+      </div>
+      <div class="field">
+        <label data-i18n="lbl_password">Password</label>
+        <input type="password" id="loginPassword" required placeholder="••••••••">
+      </div>
+      <div style="text-align: right; margin-bottom: 14px;">
+        <a href="#" onclick="switchPortal('forgot-password'); return false;" style="font-size: 12px; color: var(--blue); text-decoration: none;" data-i18n="link_forgot">Forgot Password?</a>
+      </div>
+      <button type="submit" class="btn" style="width:100%;" data-i18n="btn_signin">Sign In</button>
+    </form>
+    
+    <div class="auth-links">
+      <p><span data-i18n="txt_no_account">Don't have a citizen account? </span><a href="#" onclick="switchPortal('register'); return false;" data-i18n="link_register">Register here</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== REGISTER PORTAL ==================== -->
+<div id="register" class="portal auth-bg">
+  <div style="position: absolute; top: 20px; right: 26px;">
+    <select class="lang-selector lang-selector-dark" onchange="changeLanguage(this.value)">
+      <option value="en">English</option>
+      <option value="hi">हिंदी (Hindi)</option>
+      <option value="mr">मराठी (Marathi)</option>
+    </select>
+  </div>
+  <div class="auth-card">
+    <div class="logo">🏙️</div>
+    <h2 data-i18n="reg_title">Citizen Registration</h2>
+    <p class="sub" data-i18n="reg_sub">Join the Smart City digital platform</p>
+    
+    <form onsubmit="return handleRegister(event)">
+      <div class="field">
+        <label data-i18n="lbl_fullname">Full Name</label>
+        <input type="text" id="regName" required placeholder="John Doe">
+      </div>
+      <div class="field">
+        <label data-i18n="lbl_email">Email Address</label>
+        <input type="email" id="regEmail" required placeholder="name@example.com">
+      </div>
+      <div class="field">
+        <label data-i18n="lbl_create_pwd">Create Password</label>
+        <input type="password" id="regPassword" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn" style="width:100%; margin-top: 10px;" data-i18n="btn_register">Register Account</button>
+    </form>
+    
+    <div class="auth-links">
+      <p><span data-i18n="txt_have_account">Already have an account? </span><a href="#" onclick="switchPortal('login'); return false;" data-i18n="link_login">Log in instead</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FORGOT PASSWORD PORTAL ==================== -->
+<div id="forgot-password" class="portal auth-bg">
+  <div style="position: absolute; top: 20px; right: 26px;">
+    <select class="lang-selector lang-selector-dark" onchange="changeLanguage(this.value)">
+      <option value="en">English</option>
+      <option value="hi">हिंदी (Hindi)</option>
+      <option value="mr">मराठी (Marathi)</option>
+    </select>
+  </div>
+  
+  <div class="auth-card" id="fp-step-1">
+    <div class="logo">🏙️</div>
+    <h2 data-i18n="fp_title">Reset Password</h2>
+    <p class="sub" data-i18n="fp_sub">Enter your citizen email to receive an OTP</p>
+    
+    <form onsubmit="return handleSendOTP(event)">
+      <div class="field">
+        <label data-i18n="lbl_cit_email">Citizen Email Address</label>
+        <input type="email" id="fpEmail" required placeholder="name@example.com">
+      </div>
+      <button type="submit" class="btn" style="width:100%; margin-top: 10px;" data-i18n="btn_send_otp">Send OTP</button>
+    </form>
+    
+    <div class="auth-links">
+      <p><span data-i18n="txt_remembered">Remembered your password? </span><a href="#" onclick="switchPortal('login'); return false;" data-i18n="link_back_login">Back to Login</a></p>
+    </div>
+  </div>
+
+  <div class="auth-card" id="fp-step-2" style="display: none;">
+    <div class="logo">🏙️</div>
+    <h2 data-i18n="fp_step2_title">Verify & Reset</h2>
+    <p class="sub" data-i18n="fp_step2_sub">Enter the OTP sent to your email to reset</p>
+    
+    <form onsubmit="return handleResetPassword(event)">
+      <div class="field">
+        <label data-i18n="lbl_enter_otp">Enter OTP (Hint: 1234)</label>
+        <input type="text" id="fpOTP" required placeholder="1234">
+      </div>
+      <div class="field">
+        <label data-i18n="lbl_new_pwd">New Password</label>
+        <input type="password" id="fpNewPassword" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn" style="width:100%; margin-top: 10px;" data-i18n="btn_reset_pwd">Reset Password</button>
+    </form>
+    
+    <div class="auth-links">
+      <p><a href="#" onclick="switchPortal('login'); return false;" data-i18n="link_cancel">Cancel</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ADMIN PORTAL ==================== -->
+<div id="admin" class="portal">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏙️</div>
+      <div><span class="t1">Smart City</span><span class="t2">Digital Twin — Admin</span></div>
+    </div>
+    <nav id="adminNav">
+      <button data-sec="dashboard" class="active"><span class="icon">📊</span> Dashboard</button>
+      <button data-sec="traffic"><span class="icon">🚦</span> Traffic</button>
+      <button data-sec="parking"><span class="icon">🅿️</span> Parking</button>
+      <button data-sec="air"><span class="icon">🍃</span> Air Quality</button>
+      <button data-sec="water"><span class="icon">💧</span> Water</button>
+      <button data-sec="energy"><span class="icon">⚡</span> Energy</button>
+      <button data-sec="waste"><span class="icon">🗑️</span> Waste</button>
+      <button data-sec="alerts"><span class="icon">🔔</span> Alerts & Events</button>
+      <button data-sec="reports"><span class="icon">📈</span> Reports</button>
+      <button data-sec="database"><span class="icon">🗄️</span> System Database</button>
+    </nav>
+    <div class="sidebar-foot"><b>AI-Powered Smart City</b><br>Building a better tomorrow for our citizens.</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <!-- Mobile hamburger button added -->
+      <button class="mobile-menu-btn" onclick="toggleSidebar('admin')">☰</button>
+      <div class="search">🔍 Search locations, services, reports…</div>
+      <div class="right">
+        <div class="bell">🔔<span class="dot" id="adminAlertCount">5</span></div>
+        <div class="who">
+          <div class="av">A</div>
+          <div><span>Admin</span><br><small>City Administrator</small></div>
+        </div>
+        <button class="btn ghost" style="padding: 8px 14px; font-size: 12px; margin-left: 10px;" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <section class="section active" id="admin-dashboard">
+        <h1 class="page-title">City Dashboard</h1>
+        <p class="page-sub">Live overview of all urban services · Pune Digital Twin Zone</p>
+
+        <div class="kpi-row" id="kpiRow"></div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3>Live City Overview <a href="#" onclick="return false;">View Full Map ↗</a></h3>
+            <div class="citymap" style="background: none;">
+              <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=Pune,%20Maharashtra&t=m&z=12&output=embed&iwloc=near" style="border-radius: 12px;"></iframe>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Recent Alerts <a href="#" onclick="showSection('admin','alerts');return false;">View All</a></h3>
+            <div id="adminAlertList"></div>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="panel"><h3>Traffic Flow (live)</h3><canvas id="chartTrafficFlow" height="200"></canvas></div>
+          <div class="panel"><h3>Air Quality Trend — Today</h3><canvas id="chartAQI" height="200"></canvas></div>
+        </div>
+      </section>
+
+      <!-- TRAFFIC -->
+      <section class="section" id="admin-traffic">
+        <h1 class="page-title">Traffic & Mobility Monitoring</h1>
+        <p class="page-sub">Real-time congestion levels across major roads</p>
+        <div class="grid3">
+          <div class="panel"><h3>Congestion Split</h3><canvas id="chartTrafficFlow2" height="210"></canvas></div>
+          <div class="panel"><h3>Vehicle Count — Last 24h</h3><canvas id="chartVehicles" height="210"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>Road Segment Status</h3>
+          <div class="table-responsive">
+            <table class="dt"><thead><tr><th>Road</th><th>Zone</th><th>Congestion</th><th>Avg Speed</th><th>Status</th></tr></thead>
+            <tbody id="roadTable"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARKING -->
+      <section class="section" id="admin-parking">
+        <h1 class="page-title">Smart Parking Monitoring</h1>
+        <p class="page-sub">Occupancy across managed parking zones</p>
+        <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);" id="parkingKpi"></div>
+        <div class="panel">
+          <h3>Zone-wise Occupancy</h3>
+          <div class="table-responsive">
+            <table class="dt"><thead><tr><th>Zone</th><th>Total Spaces</th><th>Occupied</th><th>Utilization</th></tr></thead><tbody id="parkTable"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AIR QUALITY -->
+      <section class="section" id="admin-air">
+        <h1 class="page-title">Air Quality & Environmental Monitoring</h1>
+        <p class="page-sub">AQI readings from city monitoring stations</p>
+        <div class="grid2">
+          <div class="panel"><h3>AQI Trend — 7 Days</h3><canvas id="chartAQI7" height="230"></canvas></div>
+          <div class="panel"><h3>Station Readings</h3><div id="aqiStations"></div></div>
+        </div>
+      </section>
+
+      <!-- WATER -->
+      <section class="section" id="admin-water">
+        <h1 class="page-title">Water Supply & Leakage Monitoring</h1>
+        <p class="page-sub">Zone-wise supply levels and leakage detection</p>
+        <div class="grid2">
+          <div class="panel"><h3>Supply by Zone (%)</h3><canvas id="chartWater" height="230"></canvas></div>
+          <div class="panel"><h3>Leakage Alerts</h3><div id="leakList"></div></div>
+        </div>
+      </section>
+
+      <!-- ENERGY -->
+      <section class="section" id="admin-energy">
+        <h1 class="page-title">Energy Consumption Monitoring</h1>
+        <p class="page-sub">Sector-wise electricity usage across the city</p>
+        <div class="grid3">
+          <div class="panel"><h3>Consumption by Sector</h3><canvas id="chartEnergy" height="220"></canvas></div>
+          <div class="panel"><h3>Weekly Usage (MW)</h3><canvas id="chartEnergyWeek" height="220"></canvas></div>
+        </div>
+      </section>
+
+      <!-- WASTE -->
+      <section class="section" id="admin-waste">
+        <h1 class="page-title">Waste Management & Collection</h1>
+        <p class="page-sub">Smart bin fill levels and collection status</p>
+        <div class="panel">
+          <h3>Bin Status</h3>
+          <div class="table-responsive">
+            <table class="dt"><thead><tr><th>Bin ID</th><th>Location</th><th>Fill Level</th><th>Status</th></tr></thead><tbody id="binTable"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ALERTS -->
+      <section class="section" id="admin-alerts">
+        <h1 class="page-title">Alerts, Events & Notifications</h1>
+        <p class="page-sub">All active and recent alerts across city systems</p>
+        <div class="panel">
+          <div class="table-responsive">
+            <table class="dt"><thead><tr><th>Type</th><th>Description</th><th>Severity</th><th>Location</th><th>Time</th><th>Status</th></tr></thead><tbody id="fullAlertTable"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="section" id="admin-reports">
+        <h1 class="page-title">Reports & Analytics</h1>
+        <p class="page-sub">Historical trends and service-level summaries</p>
+        <div class="grid3">
+          <div class="panel"><h3>Complaint Categories — This Month</h3><canvas id="chartComplaints" height="220"></canvas></div>
+          <div class="panel"><h3>Resolution Time (avg hrs)</h3><canvas id="chartResolution" height="220"></canvas></div>
+        </div>
+        <div class="panel" style="display:flex;justify-content:space-between;align-items:center;">
+          <div><h3 style="margin-bottom:4px;">Monthly City Report</h3><p style="font-size:12px;color:var(--admin-sub);">Compiled summary of KPIs, alerts and citizen requests</p></div>
+          <button class="btn" onclick="showToast('Report generated — check downloads')">Generate Report</button>
+        </div>
+      </section>
+
+      <!-- SYSTEM DATABASE VIEWER -->
+      <section class="section" id="admin-database">
+        <h1 class="page-title">System Database Viewer</h1>
+        <p class="page-sub">Manage users and citizen requests in the database</p>
+        
+        <div class="panel" style="margin-bottom: 16px;">
+          <h3>Registered Users Database</h3>
+          <div class="table-responsive">
+            <table class="dt">
+              <thead>
+                <tr><th>Role</th><th>Full Name</th><th>Email / Username</th><th>Password</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="dbUserTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Citizen Requests Database</h3>
+          <div class="table-responsive">
+            <table class="dt">
+              <thead>
+                <tr><th>Category</th><th>Description</th><th>Reported By</th><th>Location</th><th>Time</th><th>Status Action</th></tr>
+              </thead>
+              <tbody id="dbRequestTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CITIZEN PORTAL ==================== -->
+<div id="citizen" class="portal">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏙️</div>
+      <div><span class="t1" data-i18n="app_title">Smart City</span><br><span class="t2" data-i18n="app_sub">Digital Twin</span></div>
+    </div>
+    <nav id="citizenNav">
+      <button data-sec="home" class="active"><span class="icon">🏠</span> <span data-i18n="nav_home">Home</span></button>
+      <button data-sec="services"><span class="icon">🧭</span> <span data-i18n="nav_services">Services</span></button>
+      <button data-sec="map"><span class="icon">🗺️</span> <span data-i18n="nav_map">Live Map</span></button>
+      <button data-sec="report"><span class="icon">📝</span> <span data-i18n="nav_report">Report an Issue</span></button>
+      <button data-sec="requests"><span class="icon">📋</span> <span data-i18n="nav_requests">My Requests</span></button>
+      <button data-sec="updates"><span class="icon">📰</span> <span data-i18n="nav_updates">City Updates</span></button>
+      <button data-sec="emergency"><span class="icon">🚨</span> <span data-i18n="nav_emergency">Emergency</span></button>
+    </nav>
+    <div class="promo"><b data-i18n="app_promo">📱 Smart City App</b><span data-i18n="app_promo_desc">Stay connected with your city — download our mobile app.</span><button onclick="showToast('App download link sent')" data-i18n="btn_download">Download Now</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <!-- Mobile hamburger button added -->
+      <button class="mobile-menu-btn" onclick="toggleSidebar('citizen')">☰</button>
+      
+      <select class="lang-selector" onchange="changeLanguage(this.value)" id="citLangSelect">
+        <option value="en">English</option>
+        <option value="hi">हिंदी (Hindi)</option>
+        <option value="mr">मराठी (Marathi)</option>
+      </select>
+
+      <div style="display:flex;align-items:center;gap:20px;margin-left:auto;">
+        <div class="bell">🔔<span class="dot">3</span></div>
+        <div class="who"><div class="av"></div><span id="citizenGreetingName">Hello, Citizen</span></div>
+        <button class="btn-logout-cit" onclick="handleLogout()" data-i18n="btn_logout">Logout</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- HOME -->
+      <section class="section active" id="citizen-home">
+        <div class="hero">
+          <div><h1 data-i18n="hero_title">Welcome to Smart City Digital Twin</h1><p data-i18n="hero_sub">Your city. Smarter. Together.</p></div>
+          <div class="weatherbox">⛅<div class="temp">29°C</div><div style="font-size:11.5px;opacity:.85;" data-i18n="weather_desc">Partly Cloudy</div></div>
+        </div>
+
+        <div class="svc-grid" id="svcGrid"></div>
+
+        <div class="grid2">
+          <div class="cpanel">
+            <h3><span data-i18n="sec_live_overview">Live City Overview</span> <a href="#" onclick="showSection('citizen','map');return false;" data-i18n="link_view_map">View Live Map →</a></h3>
+            <div class="citymap-light" id="cityMapLight" style="background: none;">
+              <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=Pune,%20Maharashtra&t=m&z=12&output=embed&iwloc=near" style="border-radius: 12px;"></iframe>
+            </div>
+          </div>
+          <div class="cpanel" style="margin-bottom:16px;">
+            <h3><span data-i18n="sec_city_updates">Recent City Updates</span> <a href="#" onclick="showSection('citizen','updates');return false;" data-i18n="link_view_all">View All →</a></h3>
+            <div id="citizenUpdates"></div>
+          </div>
+        </div>
+
+        <div class="cpanel">
+          <h3><span data-i18n="sec_my_requests">My Requests</span> <a href="#" onclick="showSection('citizen','requests');return false;" data-i18n="link_view_all">View All →</a></h3>
+          <div id="myRequestsPreview"></div>
+        </div>
+      </section>
+
+      <!-- SERVICES -->
+      <section class="section" id="citizen-services">
+        <h1 class="page-title" data-i18n="page_services_title">Explore City Services</h1>
+        <p class="page-sub" data-i18n="page_services_sub">Everything you need, in one place</p>
+        <div class="svc-grid" id="svcGridFull"></div>
+      </section>
+
+      <!-- MAP -->
+      <section class="section" id="citizen-map">
+        <h1 class="page-title" data-i18n="page_map_title">Live City Map</h1>
+        <p class="page-sub" data-i18n="page_map_sub">Real-time interactive map of the city</p>
+        <div class="cpanel">
+          <div class="citymap-light" id="cityMapLightBig" style="height:460px; background: none;">
+            <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=Pune,%20Maharashtra&t=m&z=13&output=embed&iwloc=near" style="border-radius: 12px;"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORT -->
+      <section class="section" id="citizen-report">
+        <h1 class="page-title" data-i18n="page_report_title">Report an Issue</h1>
+        <p class="page-sub" data-i18n="page_report_sub">Tell us what's wrong — we'll route it to the right department</p>
+        <div class="cpanel" style="max-width:640px;">
+          <form class="cform" id="reportForm" onsubmit="return submitReport(event)">
+            <div class="field"><label data-i18n="lbl_category">Category</label>
+              <select id="repCategory">
+                <option>Traffic & Roads</option><option>Water Supply / Leakage</option><option>Waste / Garbage</option>
+                <option>Street Lighting</option><option>Air Quality</option><option>Public Safety</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label data-i18n="lbl_location">Location</label><input id="repLocation" placeholder="e.g. MG Road, Sector 5" required></div>
+            <div class="field"><label data-i18n="lbl_desc">Description</label><textarea id="repDesc" rows="4" placeholder="Describe the issue in detail…" required></textarea></div>
+            <button class="cbtn" type="submit" data-i18n="btn_submit_report">Submit Report</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- REQUESTS -->
+      <section class="section" id="citizen-requests">
+        <h1 class="page-title" data-i18n="page_req_title">My Requests</h1>
+        <p class="page-sub" data-i18n="page_req_sub">Track the status of issues you've reported</p>
+        <div class="cpanel"><div id="myRequestsFull"></div></div>
+      </section>
+
+      <!-- UPDATES -->
+      <section class="section" id="citizen-updates">
+        <h1 class="page-title" data-i18n="page_upd_title">City Updates & News</h1>
+        <p class="page-sub" data-i18n="page_upd_sub">Announcements and maintenance notices</p>
+        <div class="cpanel"><div id="citizenUpdatesFull"></div></div>
+      </section>
+
+      <!-- EMERGENCY -->
+      <section class="section" id="citizen-emergency">
+        <h1 class="page-title" data-i18n="page_emg_title">Emergency Assistance</h1>
+        <p class="page-sub" data-i18n="page_emg_sub">Immediate help when you need it most</p>
+        <div class="emg-card">
+          <div><h3 style="margin-bottom:4px;" data-i18n="emg_urgent">Need urgent help?</h3><p style="font-size:12.5px;color:#7a1c1c;" data-i18n="emg_desc">Contact emergency services directly for fire, medical or safety incidents.</p></div>
+          <button class="emg-btn" onclick="showToast('Connecting to SOS Emergency line…')">📞 <span data-i18n="btn_sos">SOS Emergency</span></button>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card">🚓<div class="n">100</div><span data-i18n="emg_police">Police</span></div>
+          <div class="contact-card">🚑<div class="n">108</div><span data-i18n="emg_ambulance">Ambulance</span></div>
+          <div class="contact-card">🚒<div class="n">101</div><span data-i18n="emg_fire">Fire</span></div>
+          <div class="contact-card">☎️<div class="n">1916</div><span data-i18n="emg_helpline">City Helpline</span></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- I18N Localization Dictionary ---------- */
+const i18nDict = {
+  en: {
+    // Auth Portals
+    login_title: "Smart City Login", login_sub: "Access your personalized dashboard",
+    lbl_role: "Select Role", role_citizen: "Citizen Portal", role_admin: "Administrator Portal",
+    lbl_email_user: "Email or Username", ph_email_user: "Admin username or Citizen email", lbl_password: "Password", link_forgot: "Forgot Password?",
+    btn_signin: "Sign In", txt_no_account: "Don't have a citizen account? ", link_register: "Register here",
+    reg_title: "Citizen Registration", reg_sub: "Join the Smart City digital platform",
+    lbl_fullname: "Full Name", lbl_email: "Email Address", lbl_create_pwd: "Create Password",
+    btn_register: "Register Account", txt_have_account: "Already have an account? ", link_login: "Log in instead",
+    fp_title: "Reset Password", fp_sub: "Enter your citizen email to receive an OTP",
+    lbl_cit_email: "Citizen Email Address", btn_send_otp: "Send OTP",
+    txt_remembered: "Remembered your password? ", link_back_login: "Back to Login",
+    fp_step2_title: "Verify & Reset", fp_step2_sub: "Enter the OTP sent to your email to reset",
+    lbl_enter_otp: "Enter OTP (Hint: 1234)", lbl_new_pwd: "New Password", btn_reset_pwd: "Reset Password", link_cancel: "Cancel",
+    
+    // Citizen Portal
+    app_title: "Smart City", app_sub: "Digital Twin",
+    nav_home: "Home", nav_services: "Services", nav_map: "Live Map", nav_report: "Report an Issue", nav_requests: "My Requests", nav_updates: "City Updates", nav_emergency: "Emergency",
+    app_promo: "📱 Smart City App", app_promo_desc: "Stay connected with your city — download our mobile app.", btn_download: "Download Now", btn_logout: "Logout",
+    hero_title: "Welcome to Smart City Digital Twin", hero_sub: "Your city. Smarter. Together.", weather_desc: "Partly Cloudy",
+    sec_live_overview: "Live City Overview", link_view_map: "View Live Map →", sec_city_updates: "Recent City Updates", link_view_all: "View All →", sec_my_requests: "My Requests",
+    page_services_title: "Explore City Services", page_services_sub: "Everything you need, in one place",
+    page_map_title: "Live City Map", page_map_sub: "Real-time interactive map of the city",
+    page_report_title: "Report an Issue", page_report_sub: "Tell us what's wrong — we'll route it to the right department",
+    lbl_category: "Category", lbl_location: "Location", lbl_desc: "Description", btn_submit_report: "Submit Report",
+    page_req_title: "My Requests", page_req_sub: "Track the status of issues you've reported",
+    page_upd_title: "City Updates & News", page_upd_sub: "Announcements and maintenance notices",
+    page_emg_title: "Emergency Assistance", page_emg_sub: "Immediate help when you need it most", emg_urgent: "Need urgent help?", emg_desc: "Contact emergency services directly for fire, medical or safety incidents.",
+    btn_sos: "SOS Emergency", emg_police: "Police", emg_ambulance: "Ambulance", emg_fire: "Fire", emg_helpline: "City Helpline",
+    greeting: "Hello, ", btn_delete: "🗑️ Delete"
+  },
+  hi: {
+    // Auth Portals
+    login_title: "स्मार्ट सिटी लॉगिन", login_sub: "अपने व्यक्तिगत डैशबोर्ड तक पहुंचें",
+    lbl_role: "भूमिका चुनें", role_citizen: "नागरिक पोर्टल", role_admin: "प्रशासक पोर्टल",
+    lbl_email_user: "ईमेल या उपयोगकर्ता नाम", ph_email_user: "व्यवस्थापक उपयोगकर्ता नाम या नागरिक ईमेल", lbl_password: "पासवर्ड", link_forgot: "पासवर्ड भूल गए?",
+    btn_signin: "साइन इन करें", txt_no_account: "क्या आपके पास नागरिक खाता नहीं है? ", link_register: "यहां रजिस्टर करें",
+    reg_title: "नागरिक पंजीकरण", reg_sub: "स्मार्ट सिटी डिजिटल प्लेटफॉर्म से जुड़ें",
+    lbl_fullname: "पूरा नाम", lbl_email: "ईमेल पता", lbl_create_pwd: "पासवर्ड बनाएं",
+    btn_register: "खाता रजिस्टर करें", txt_have_account: "क्या आपके पास पहले से खाता है? ", link_login: "इसके बजाय लॉग इन करें",
+    fp_title: "पासवर्ड रीसेट करें", fp_sub: "OTP प्राप्त करने के लिए अपना नागरिक ईमेल दर्ज करें",
+    lbl_cit_email: "नागरिक ईमेल पता", btn_send_otp: "OTP भेजें",
+    txt_remembered: "क्या आपको अपना पासवर्ड याद है? ", link_back_login: "लॉगिन पर वापस जाएं",
+    fp_step2_title: "सत्यापित और रीसेट करें", fp_step2_sub: "रीसेट करने के लिए अपने ईमेल पर भेजा गया OTP दर्ज करें",
+    lbl_enter_otp: "OTP दर्ज करें (संकेत: 1234)", lbl_new_pwd: "नया पासवर्ड", btn_reset_pwd: "पासवर्ड रीसेट करें", link_cancel: "रद्द करें",
+
+    // Citizen Portal
+    app_title: "स्मार्ट सिटी", app_sub: "डिजिटल ट्विन",
+    nav_home: "होम", nav_services: "सेवाएँ", nav_map: "लाइव मैप", nav_report: "समस्या दर्ज करें", nav_requests: "मेरे अनुरोध", nav_updates: "शहर के अपडेट", nav_emergency: "आपातकालीन",
+    app_promo: "📱 स्मार्ट सिटी ऐप", app_promo_desc: "अपने शहर से जुड़े रहें — हमारा ऐप डाउनलोड करें।", btn_download: "अभी डाउनलोड करें", btn_logout: "लॉग आउट",
+    hero_title: "स्मार्ट सिटी डिजिटल ट्विन में आपका स्वागत है", hero_sub: "आपका शहर। अधिक स्मार्ट। एक साथ।", weather_desc: "आंशिक रूप से बादल",
+    sec_live_overview: "लाइव शहर अवलोकन", link_view_map: "लाइव मैप देखें →", sec_city_updates: "हाल के शहर अपडेट", link_view_all: "सभी देखें →", sec_my_requests: "मेरे अनुरोध",
+    page_services_title: "शहर की सेवाओं का अन्वेषण करें", page_services_sub: "आपको जो कुछ भी चाहिए, एक ही स्थान पर",
+    page_map_title: "लाइव शहर मैप", page_map_sub: "शहर का रीयल-टाइम इंटरैक्टिव मैप",
+    page_report_title: "समस्या दर्ज करें", page_report_sub: "हमें बताएं क्या गलत है — हम इसे सही विभाग तक पहुंचाएंगे",
+    lbl_category: "श्रेणी", lbl_location: "स्थान", lbl_desc: "विवरण", btn_submit_report: "रिपोर्ट सबमिट करें",
+    page_req_title: "मेरे अनुरोध", page_req_sub: "आपके द्वारा दर्ज की गई समस्याओं की स्थिति ट्रैक करें",
+    page_upd_title: "शहर के अपडेट और समाचार", page_upd_sub: "घोषणाएँ और रखरखाव नोटिस",
+    page_emg_title: "आपातकालीन सहायता", page_emg_sub: "जब आपको सबसे ज्यादा जरूरत हो तो तत्काल मदद", emg_urgent: "तत्काल मदद चाहिए?", emg_desc: "आग, चिकित्सा या सुरक्षा घटनाओं के लिए सीधे आपातकालीन सेवाओं से संपर्क करें।",
+    btn_sos: "SOS आपातकाल", emg_police: "पुलिस", emg_ambulance: "एम्बुलेंस", emg_fire: "फायर", emg_helpline: "सिटी हेल्पलाइन",
+    greeting: "नमस्ते, ", btn_delete: "🗑️ हटाएं"
+  },
+  mr: {
+    // Auth Portals
+    login_title: "स्मार्ट सिटी लॉगिन", login_sub: "तुमच्या वैयक्तिक डॅशबोर्डमध्ये प्रवेश करा",
+    lbl_role: "भूमिका निवडा", role_citizen: "नागरिक पोर्टल", role_admin: "प्रशासक पोर्टल",
+    lbl_email_user: "ईमेल किंवा वापरकर्तानाव", ph_email_user: "प्रशासक वापरकर्तानाव किंवा नागरिक ईमेल", lbl_password: "पासवर्ड", link_forgot: "पासवर्ड विसरलात?",
+    btn_signin: "साइन इन करा", txt_no_account: "नागरिक खाते नाही का? ", link_register: "येथे नोंदणी करा",
+    reg_title: "नागरिक नोंदणी", reg_sub: "स्मार्ट सिटी डिजिटल प्लॅटफॉर्ममध्ये सामील व्हा",
+    lbl_fullname: "पूर्ण नाव", lbl_email: "ईमेल पत्ता", lbl_create_pwd: "पासवर्ड तयार करा",
+    btn_register: "खाते नोंदणीकृत करा", txt_have_account: "आधीपासून खाते आहे का? ", link_login: "त्याऐवजी लॉग इन करा",
+    fp_title: "पासवर्ड रीसेट करा", fp_sub: "OTP मिळवण्यासाठी तुमचा नागरिक ईमेल प्रविष्ट करा",
+    lbl_cit_email: "नागरिक ईमेल पत्ता", btn_send_otp: "OTP पाठवा",
+    txt_remembered: "तुमचा पासवर्ड आठवला? ", link_back_login: "लॉगिनवर परत जा",
+    fp_step2_title: "पडताळणी आणि रीसेट करा", fp_step2_sub: "रीसेट करण्यासाठी तुमच्या ईमेलवर पाठवलेला OTP प्रविष्ट करा",
+    lbl_enter_otp: "OTP प्रविष्ट करा (इशारा: 1234)", lbl_new_pwd: "नवीन पासवर्ड", btn_reset_pwd: "पासवर्ड रीसेट करा", link_cancel: "रद्द करा",
+
+    // Citizen Portal
+    app_title: "स्मार्ट सिटी", app_sub: "डिजिटल ट्विन",
+    nav_home: "मुख्यपृष्ठ", nav_services: "सेवा", nav_map: "लाइव्ह मॅप", nav_report: "समस्या नोंदवा", nav_requests: "माझ्या विनंत्या", nav_updates: "शहराचे अपडेट्स", nav_emergency: "आणीबाणी",
+    app_promo: "📱 स्मार्ट सिटी ॲप", app_promo_desc: "आपल्या शहराशी जोडलेले राहा — आमचे ॲप डाउनलोड करा.", btn_download: "आता डाउनलोड करा", btn_logout: "लॉगआउट",
+    hero_title: "स्मार्ट सिटी डिजिटल ट्विनमध्ये आपले स्वागत आहे", hero_sub: "आपले शहर. अधिक स्मार्ट. एकत्र.", weather_desc: "अंशतः ढगाळ",
+    sec_live_overview: "लाइव्ह शहर अवलोकन", link_view_map: "लाइव्ह मॅप पहा →", sec_city_updates: "अलीकडील शहर अपडेट्स", link_view_all: "सर्व पहा →", sec_my_requests: "माझ्या विनंत्या",
+    page_services_title: "शहर सेवा एक्सप्लोर करा", page_services_sub: "तुम्हाला आवश्यक असलेले सर्वकाही एकाच ठिकाणी",
+    page_map_title: "लाइव्ह शहर मॅप", page_map_sub: "शहराचा रिअल-टाइम इंटरएक्टिव्ह मॅप",
+    page_report_title: "समस्या नोंदवा", page_report_sub: "काय चुकीचे आहे ते आम्हाला सांगा — आम्ही ते योग्य विभागाकडे पाठवू",
+    lbl_category: "श्रेणी", lbl_location: "स्थान", lbl_desc: "वर्णन", btn_submit_report: "रिपोर्ट सबमिट करा",
+    page_req_title: "माझ्या विनंत्या", page_req_sub: "तुम्ही नोंदवलेल्या समस्यांची स्थिती ट्रॅक करा",
+    page_upd_title: "शहराचे अपडेट्स आणि बातम्या", page_upd_sub: "घोषणा आणि देखभाल नोटिसा",
+    page_emg_title: "आणीबाणी सहाय्य", page_emg_sub: "जेव्हा तुम्हाला सर्वात जास्त गरज असते तेव्हा त्वरित मदत", emg_urgent: "त्वरित मदत हवी आहे?", emg_desc: "आग, वैद्यकीय किंवा सुरक्षा घटनांसाठी थेट आपत्कालीन सेवांशी संपर्क साधा.",
+    btn_sos: "SOS आणीबाणी", emg_police: "पोलीस", emg_ambulance: "रुग्णवाहिका", emg_fire: "अग्निशमन", emg_helpline: "शहर हेल्पलाइन",
+    greeting: "नमस्कार, ", btn_delete: "🗑️ हटवा"
+  }
+};
+
+let currentLang = localStorage.getItem('smartCityLang') || 'en';
+
+function changeLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('smartCityLang', lang);
+  
+  // Update ALL language dropdowns so they stay synced
+  document.querySelectorAll('.lang-selector').forEach(sel => sel.value = lang);
+  
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18nDict[lang][key]) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = i18nDict[lang][key];
+      } else {
+        el.innerHTML = i18nDict[lang][key];
+      }
+    }
+  });
+
+  // Re-render requests to translate delete buttons dynamically
+  renderRequests();
+
+  // Update greeting name
+  const loggedInUserStr = localStorage.getItem('loggedInUser');
+  if (loggedInUserStr) {
+    const user = JSON.parse(loggedInUserStr);
+    if (user.role === 'citizen') {
+      document.getElementById('citizenGreetingName').textContent = i18nDict[lang].greeting + (user.name ? user.name.split(' ')[0] : 'Citizen');
+    }
+  }
+}
+
+/* ---------- Mock Database Setup ---------- */
+function initDB() {
+  let users = JSON.parse(localStorage.getItem('smartCityUsers'));
+  if (!users) {
+    users = [];
+  }
+  
+  if (!users.find(u => u.identifier === 'shoyab')) {
+    users.push({ role: 'admin', identifier: 'shoyab', password: 'Pass@123', name: 'Shoyab Admin' });
+  }
+  if (!users.find(u => u.identifier === 'CoolNarayan')) {
+    users.push({ role: 'admin', identifier: 'CoolNarayan', password: 'Bmit@1234', name: 'CoolNarayan Admin' });
+  }
+  
+  localStorage.setItem('smartCityUsers', JSON.stringify(users));
+
+  if (!localStorage.getItem('smartCityRequests')) {
+    localStorage.setItem('smartCityRequests', JSON.stringify([
+      { t: 'Street Light Not Working', l: 'MG Road, Near City Center', desc: 'Street light is out.', citizenName: 'System Test', status: 'Pending', time: '10:00 AM' }
+    ]));
+  }
+
+  // Set initial language globally across all panels
+  changeLanguage(currentLang);
+}
+initDB();
+
+/* ---------- Database Viewer & Management Logic for Admin ---------- */
+function loadAdminDatabase() {
+  const users = JSON.parse(localStorage.getItem('smartCityUsers')) || [];
+  document.getElementById('dbUserTable').innerHTML = users.map(u => `
+    <tr>
+      <td><span class="badge ${u.role === 'admin' ? 'b-red' : 'b-blue'}">${u.role.toUpperCase()}</span></td>
+      <td>${u.name || 'N/A'}</td>
+      <td>${u.identifier}</td>
+      <td style="font-family: monospace;">${u.password}</td>
+      <td>
+        ${u.role === 'citizen' 
+          ? `<button class="btn ghost" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #ef4444; min-width: 70px;" onclick="deleteUser('${u.identifier}')">Remove</button>` 
+          : `<span style="font-size: 11px; color: var(--admin-sub);">Admin Core</span>`}
+      </td>
+    </tr>
+  `).join('');
+
+  const requests = JSON.parse(localStorage.getItem('smartCityRequests')) || [];
+  document.getElementById('dbRequestTable').innerHTML = requests.map((r, index) => `
+    <tr>
+      <td>${r.t}</td>
+      <td>${r.desc || 'No description provided'}</td>
+      <td><span class="badge b-blue">${r.citizenName || 'Unknown'}</span></td>
+      <td>${r.l}</td>
+      <td>${r.time}</td>
+      <td>
+        <select onchange="updateRequestStatus(${index}, this.value)" style="background: #0c1526; color: #fff; border: 1px solid var(--admin-border); padding: 5px 8px; border-radius: 6px; font-size: 11px;">
+          <option value="Pending" ${r.status === 'Pending' ? 'selected' : ''}>Pending</option>
+          <option value="In Progress" ${r.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+          <option value="Resolved" ${r.status === 'Resolved' ? 'selected' : ''}>Complete/Resolved</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function deleteUser(identifier) {
+  if (confirm("Are you sure you want to permanently remove this citizen's account?")) {
+    let users = JSON.parse(localStorage.getItem('smartCityUsers')) || [];
+    users = users.filter(u => u.identifier !== identifier);
+    localStorage.setItem('smartCityUsers', JSON.stringify(users));
+    
+    showToast('Citizen account removed successfully');
+    loadAdminDatabase();
+  }
+}
+
+function updateRequestStatus(index, newStatus) {
+  let requests = JSON.parse(localStorage.getItem('smartCityRequests')) || [];
+  requests[index].status = newStatus;
+  localStorage.setItem('smartCityRequests', JSON.stringify(requests));
+  
+  showToast(`Request status changed to ${newStatus}`);
+  loadAdminDatabase();
+  loadAdminRequests(); 
+  renderRequests(); 
+}
+
+/* ---------- Auth & Mobile Navigation ---------- */
+function switchPortal(p){
+  document.querySelectorAll('.portal').forEach(el=>el.classList.remove('active'));
+  document.getElementById(p).classList.add('active');
+  
+  if (p === 'login' || p === 'register' || p === 'forgot-password') {
+    const fp1 = document.getElementById('fp-step-1');
+    const fp2 = document.getElementById('fp-step-2');
+    if(fp1) fp1.style.display = 'block';
+    if(fp2) fp2.style.display = 'none';
+  }
+}
+
+function toggleSidebar(portal) {
+  document.querySelector(`#${portal} .sidebar`).classList.toggle('open');
+}
+
+function showSection(portal,sec){
+  document.querySelectorAll('#'+portal+' nav button').forEach(b=>b.classList.toggle('active',b.dataset.sec===sec));
+  document.querySelectorAll('#'+portal+' .section').forEach(s=>s.classList.toggle('active',s.id===portal+'-'+sec));
+  document.querySelector(`#${portal} .sidebar`).classList.remove('open'); // Close on mobile click
+}
+document.querySelectorAll('#adminNav button').forEach(b=>b.addEventListener('click',()=>showSection('admin',b.dataset.sec)));
+document.querySelectorAll('#citizenNav button').forEach(b=>b.addEventListener('click',()=>showSection('citizen',b.dataset.sec)));
+
+
+function handleLogin(e) {
+  e.preventDefault();
+  const role = document.getElementById('loginRole').value;
+  const identifier = document.getElementById('loginIdentifier').value;
+  const pass = document.getElementById('loginPassword').value;
+  
+  const users = JSON.parse(localStorage.getItem('smartCityUsers'));
+  const validUser = users.find(u => u.identifier === identifier && u.password === pass && u.role === role);
+  
+  if (validUser) {
+    localStorage.setItem('loggedInUser', JSON.stringify(validUser));
+    
+    if (role === 'citizen') {
+      document.getElementById('citizenGreetingName').textContent = i18nDict[currentLang].greeting + (validUser.name ? validUser.name.split(' ')[0] : 'Citizen');
+    }
+
+    switchPortal(role);
+    showToast('Logged in successfully');
+    if (role === 'admin') {
+      loadAdminRequests();
+      loadAdminDatabase();
+    }
+  } else {
+    showToast('Invalid credentials! Please check your username/password and role.');
+  }
+}
+
+function handleRegister(e) {
+  e.preventDefault();
+  const name = document.getElementById('regName').value;
+  const email = document.getElementById('regEmail').value;
+  const pass = document.getElementById('regPassword').value;
+  
+  const users = JSON.parse(localStorage.getItem('smartCityUsers'));
+  
+  if(users.find(u => u.identifier === email)) {
+    showToast('An account with this email already exists!');
+    return;
+  }
+  
+  users.push({ role: 'citizen', identifier: email, password: pass, name: name });
+  localStorage.setItem('smartCityUsers', JSON.stringify(users));
+  
+  switchPortal('login');
+  showToast('Registration successful! Please login.');
+}
+
+function handleLogout() {
+  localStorage.removeItem('loggedInUser'); 
+  switchPortal('login');
+  showToast('Logged out successfully');
+}
+
+/* ---------- Forgot Password Logic ---------- */
+let resetTargetEmail = '';
+
+function handleSendOTP(e) {
+  e.preventDefault();
+  const email = document.getElementById('fpEmail').value;
+  const users = JSON.parse(localStorage.getItem('smartCityUsers'));
+  const validUser = users.find(u => u.identifier === email && u.role === 'citizen');
+  
+  if (validUser) {
+    resetTargetEmail = email;
+    showToast('OTP sent to your email! (Mock OTP: 1234)');
+    document.getElementById('fp-step-1').style.display = 'none';
+    document.getElementById('fp-step-2').style.display = 'block';
+  } else {
+    showToast('Only registered citizens can reset passwords via email.');
+  }
+}
+
+function handleResetPassword(e) {
+  e.preventDefault();
+  const otp = document.getElementById('fpOTP').value;
+  const newPass = document.getElementById('fpNewPassword').value;
+  
+  if(otp !== '1234') {
+    showToast('Invalid OTP!');
+    return;
+  }
+
+  const users = JSON.parse(localStorage.getItem('smartCityUsers'));
+  const userIndex = users.findIndex(u => u.identifier === resetTargetEmail && u.role === 'citizen');
+  
+  if(userIndex !== -1) {
+    users[userIndex].password = newPass;
+    localStorage.setItem('smartCityUsers', JSON.stringify(users));
+    
+    document.getElementById('fpEmail').value = '';
+    document.getElementById('fpOTP').value = '';
+    document.getElementById('fpNewPassword').value = '';
+    
+    switchPortal('login');
+    showToast('Password reset successful! Please log in.');
+  }
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.display='none',2600);
+}
+
+/* ---------- Chart.js dark defaults ---------- */
+Chart.defaults.color='#8894b3';
+Chart.defaults.borderColor='#1e2a42';
+Chart.defaults.font.size=11;
+
+/* ---------- Data model ---------- */
+const kpis=[
+  {key:'traffic',label:'Traffic Status',ic:'🚦',val:78,unit:'%',status:'Moderate',color:'#f59e0b',bg:'rgba(245,158,11,.15)'},
+  {key:'aqi',label:'Air Quality Index',ic:'🍃',val:42,unit:'',status:'Good',color:'#22c55e',bg:'rgba(34,197,94,.15)'},
+  {key:'parking',label:'Parking Occupancy',ic:'🅿️',val:65,unit:'%',status:'Available: 35%',color:'#3b82f6',bg:'rgba(59,130,246,.15)'},
+  {key:'waste',label:'Waste Collection',ic:'🗑️',val:120,unit:' bins',status:'Bins Full: 8',color:'#f97316',bg:'rgba(249,115,22,.15)'},
+  {key:'water',label:'Water Supply',ic:'💧',val:92,unit:'%',status:'Normal',color:'#06b6d4',bg:'rgba(6,182,212,.15)'},
+  {key:'energy',label:'Energy Usage',ic:'⚡',val:68,unit:'%',status:'Normal',color:'#eab308',bg:'rgba(234,179,8,.15)'},
+];
+
+function renderKPIs(){
+  document.getElementById('kpiRow').innerHTML=kpis.map(k=>`
+    <div class="kpi">
+      <div class="top"><div class="ic" style="background:${k.bg};color:${k.color}">${k.ic}</div><div class="lbl">${k.label}</div></div>
+      <div class="val">${k.val}${k.unit}</div>
+      <div class="stat"><span class="dotlive"></span> Live &nbsp; <span style="color:${k.color}">${k.status}</span></div>
+    </div>`).join('');
+}
+renderKPIs();
+
+let alerts=[
+  {ic:'🚗',bg:'rgba(239,68,68,.15)',c:'#f87171',t:'Traffic Congestion',d:'Heavy traffic reported on MG Road',tm:'10:24 AM',sev:'Warning',loc:'MG Road',status:'Active'},
+  {ic:'🍃',bg:'rgba(245,158,11,.15)',c:'#fbbf24',t:'Air Quality Alert',d:'AQI moderate in Industrial Area',tm:'09:15 AM',sev:'Moderate',loc:'Industrial Area',status:'Active'},
+  {ic:'💧',bg:'rgba(59,130,246,.15)',c:'#60a5fa',t:'Water Leak Detected',d:'Leak detected in Pipeline 4B',tm:'08:50 AM',sev:'Critical',loc:'Zone 4B',status:'Assigned'},
+  {ic:'🔥',bg:'rgba(239,68,68,.15)',c:'#f87171',t:'Fire Alert',d:'Fire reported in Sector 12',tm:'08:20 AM',sev:'Critical',loc:'Sector 12',status:'Resolved'},
+  {ic:'🗑️',bg:'rgba(34,197,94,.15)',c:'#4ade80',t:'Waste Bin Full',d:'Bin ID WB-125 is full',tm:'07:40 AM',sev:'Info',loc:'Green Park',status:'Pending'},
+];
+function renderAlerts(){
+  document.getElementById('adminAlertList').innerHTML=alerts.slice(0,5).map(a=>`
+    <div class="alert-item"><div class="ic" style="background:${a.bg};color:${a.c}">${a.ic}</div>
+      <div><div class="tt">${a.t}</div><div class="dd">${a.d}</div></div>
+      <div class="tm">${a.tm}</div></div>`).join('');
+  document.getElementById('adminAlertCount').textContent=alerts.filter(a=>a.status==='Active').length;
+  document.getElementById('fullAlertTable').innerHTML=alerts.map(a=>`
+    <tr><td>${a.ic} ${a.t}</td><td>${a.d}</td>
+      <td><span class="badge ${a.sev==='Critical'?'b-red':a.sev==='Moderate'||a.sev==='Warning'?'b-amber':'b-blue'}">${a.sev}</span></td>
+      <td>${a.loc}</td><td>${a.tm}</td>
+      <td><span class="badge ${a.status==='Resolved'?'b-green':a.status==='Active'?'b-red':'b-blue'}">${a.status}</span></td></tr>`).join('');
+}
+renderAlerts();
+
+/* Traffic roads table */
+const roads=[
+  {name:'MG Road',zone:'Central',cong:82,speed:18,status:'Heavy'},
+  {name:'Ring Road North',zone:'North',cong:35,speed:44,status:'Smooth'},
+  {name:'FC Road',zone:'West',cong:58,speed:28,status:'Moderate'},
+  {name:'Airport Road',zone:'East',cong:71,speed:22,status:'Heavy'},
+  {name:'Hinjewadi Bypass',zone:'West',cong:20,speed:52,status:'Smooth'},
+  {name:'Station Road',zone:'Central',cong:90,speed:12,status:'Blocked'},
+];
+const stColor={Smooth:'b-green',Moderate:'b-amber',Heavy:'b-red',Blocked:'b-red'};
+document.getElementById('roadTable').innerHTML=roads.map(r=>`
+  <tr><td>${r.name}</td><td>${r.zone}</td>
+  <td><div class="bar-track"><div class="bar-fill" style="width:${r.cong}%;background:${r.cong>75?'#ef4444':r.cong>45?'#f59e0b':'#22c55e'}"></div></div></td>
+  <td>${r.speed} km/h</td><td><span class="badge ${stColor[r.status]}">${r.status}</span></td></tr>`).join('');
+
+/* Parking */
+const parkZones=[
+  {z:'Sector 5 Mall',total:220,occ:180},{z:'City Center',total:160,occ:150},
+  {z:'Railway Station',total:300,occ:110},{z:'Hinjewadi IT Park',total:400,occ:260},
+];
+document.getElementById('parkingKpi').innerHTML=[
+  {l:'Total Spaces',v:parkZones.reduce((a,b)=>a+b.total,0),c:'#3b82f6'},
+  {l:'Occupied',v:parkZones.reduce((a,b)=>a+b.occ,0),c:'#f59e0b'},
+  {l:'Available',v:parkZones.reduce((a,b)=>a+b.total-b.occ,0),c:'#22c55e'},
+  {l:'Avg Utilization',v:Math.round(100*parkZones.reduce((a,b)=>a+b.occ,0)/parkZones.reduce((a,b)=>a+b.total,0))+'%',c:'#a855f7'},
+].map(k=>`<div class="kpi"><div class="lbl">${k.l}</div><div class="val" style="color:${k.c}">${k.v}</div></div>`).join('');
+document.getElementById('parkTable').innerHTML=parkZones.map(z=>{
+  const pct=Math.round(100*z.occ/z.total);
+  return `<tr><td>${z.z}</td><td>${z.total}</td><td>${z.occ}</td>
+  <td><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${pct>80?'#ef4444':pct>50?'#f59e0b':'#22c55e'}"></div></div> ${pct}%</td></tr>`;
+}).join('');
+
+/* AQI stations */
+const stations=[
+  {n:'Shivajinagar',v:42,s:'Good'},{n:'Hadapsar',v:58,s:'Moderate'},{n:'Kothrud',v:35,s:'Good'},{n:'Wakad',v:66,s:'Moderate'},{n:'Hinjewadi',v:48,s:'Good'},
+];
+document.getElementById('aqiStations').innerHTML=stations.map(s=>`
+  <div class="alert-item"><div class="ic" style="background:${s.v>55?'rgba(245,158,11,.15)':'rgba(34,197,94,.15)'};color:${s.v>55?'#fbbf24':'#4ade80'}">🍃</div>
+  <div><div class="tt">${s.n}</div><div class="dd">AQI ${s.v} · ${s.s}</div></div></div>`).join('');
+
+/* Water leaks */
+const leaks=[
+  {z:'Pipeline 4B',t:'Detected 08:50 AM',sev:'Critical'},
+  {z:'Zone Kothrud',t:'Under maintenance',sev:'Moderate'},
+  {z:'Zone Aundh',t:'Resolved yesterday',sev:'Resolved'},
+];
+document.getElementById('leakList').innerHTML=leaks.map(l=>`
+  <div class="alert-item"><div class="ic" style="background:rgba(59,130,246,.15);color:#60a5fa">💧</div>
+  <div><div class="tt">${l.z}</div><div class="dd">${l.t}</div></div>
+  <div class="tm"><span class="badge ${l.sev==='Critical'?'b-red':l.sev==='Resolved'?'b-green':'b-amber'}">${l.sev}</span></div></div>`).join('');
+
+/* Waste bins */
+const bins=[
+  {id:'WB-101',loc:'Green Park Sector 5',fill:92},{id:'WB-102',loc:'MG Road Market',fill:45},
+  {id:'WB-103',loc:'Railway Colony',fill:78},{id:'WB-104',loc:'Hinjewadi Phase 2',fill:30},
+  {id:'WB-125',loc:'Sector 12',fill:100},
+];
+document.getElementById('binTable').innerHTML=bins.map(b=>`
+  <tr><td>${b.id}</td><td>${b.loc}</td>
+  <td><div class="bar-track"><div class="bar-fill" style="width:${b.fill}%;background:${b.fill>85?'#ef4444':b.fill>55?'#f59e0b':'#22c55e'}"></div></div> ${b.fill}%</td>
+  <td><span class="badge ${b.fill>85?'b-red':b.fill>55?'b-amber':'b-green'}">${b.fill>85?'Full':b.fill>55?'Filling':'Normal'}</span></td></tr>`).join('');
+
+/* ---------- Charts ---------- */
+function mkDonut(id,labels,data,colors){
+  return new Chart(document.getElementById(id),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0}]},
+  options:{responsive: true, maintainAspectRatio: false, plugins:{legend:{position:'right',labels:{boxWidth:8,padding:12}}},cutout:'68%'}});
+}
+function mkLine(id,labels,data,color){
+  return new Chart(document.getElementById(id),{type:'line',data:{labels,datasets:[{data,borderColor:color,backgroundColor:color+'22',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},
+  options:{responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1e2a42'}}}}});
+}
+function mkBar(id,labels,data,color){
+  return new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[{data,backgroundColor:color,borderRadius:6}]},
+  options:{responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1e2a42'}}}}});
+}
+
+const hrs=['12AM','4AM','8AM','12PM','4PM','8PM','12AM'];
+const aqiSeries=[28,25,40,55,62,45,38];
+let trafficChart=mkDonut('chartTrafficFlow',['Smooth','Moderate','Heavy','Blocked'],[35,40,20,5],['#22c55e','#f59e0b','#ef4444','#a855f7']);
+let aqiChart=mkLine('chartAQI',hrs,aqiSeries,'#22c55e');
+mkDonut('chartTrafficFlow2',['Smooth','Moderate','Heavy','Blocked'],[35,40,20,5],['#22c55e','#f59e0b','#ef4444','#a855f7']);
+mkBar('chartVehicles',['12AM','4AM','8AM','12PM','4PM','8PM'],[320,180,980,1240,1450,760],'#3b82f6');
+mkLine('chartAQI7',['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],[38,45,52,60,48,35,42],'#22c55e');
+mkBar('chartWater',['Aundh','Hinjewadi','Kothrud','Hadapsar','Kharadi'],[98,95,92,90,88],'#06b6d4');
+mkDonut('chartEnergy',['Residential','Commercial','Industrial','Public'],[40,30,20,10],['#3b82f6','#22c55e','#f59e0b','#a855f7']);
+mkBar('chartEnergyWeek',['14 May','15 May','16 May','17 May','18 May','19 May','20 May'],[210,225,240,255,260,248,256],'#eab308');
+mkDonut('chartComplaints',['Traffic','Water','Waste','Lighting','Other'],[32,24,20,14,10],['#ef4444','#3b82f6','#f97316','#eab308','#a855f7']);
+mkBar('chartResolution',['Traffic','Water','Waste','Lighting','Other'],[6,10,4,8,12],'#8b5cf6');
+
+/* Live simulated updates */
+setInterval(()=>{
+  kpis.forEach(k=>{
+    let delta=(Math.random()*6-3);
+    k.val=Math.max(5,Math.min(100,Math.round(k.val+delta)));
+  });
+  renderKPIs();
+  aqiSeries.shift(); aqiSeries.push(Math.round(30+Math.random()*40));
+  aqiChart.data.datasets[0].data=aqiSeries; aqiChart.update('none');
+},4000);
+
+/* ---------- CITIZEN portal data ---------- */
+const services=[
+  {ic:'🚗',t:'Traffic Updates',d:'Check real-time traffic conditions',c:'#22c55e',bg:'#eafaf0'},
+  {ic:'🅿️',t:'Smart Parking',d:'Find & book parking slots easily',c:'#3b82f6',bg:'#eaf1ff'},
+  {ic:'🗑️',t:'Waste Collection',d:'Check collection schedule & bin status',c:'#a855f7',bg:'#f4eaff'},
+  {ic:'💧',t:'Water Services',d:'Water supply, quality & usage info',c:'#06b6d4',bg:'#e6f9fc'},
+  {ic:'⚡',t:'Energy Usage',d:'View electricity usage & saving tips',c:'#eab308',bg:'#fff8e0'},
+  {ic:'🍃',t:'Air Quality',d:'Check live AQI & air quality index',c:'#22c55e',bg:'#eafaf0'},
+  {ic:'🚌',t:'Public Transport',d:'Bus & metro routes and live arrivals',c:'#0ea5e9',bg:'#e6f4fd'},
+  {ic:'🏥',t:'Emergency',d:'Quick access to emergency services',c:'#ef4444',bg:'#fdeaea'},
+  {ic:'📝',t:'Report an Issue',d:'Report civic problems in your area',c:'#f97316',bg:'#fff1e6'},
+  {ic:'📋',t:'My Requests',d:'Track status of your complaints',c:'#6366f1',bg:'#edeeff'},
+  {ic:'📰',t:'City Updates',d:'Latest news and announcements',c:'#334155',bg:'#eef1f4'},
+  {ic:'💬',t:'Feedback',d:'Share suggestions to improve services',c:'#db2777',bg:'#fdeaf3'},
+];
+const svcHTML=services.map(s=>`<div class="svc" onclick="showToast('${s.t} opened')"><div class="ic" style="background:${s.bg};color:${s.c}">${s.ic}</div><div class="t">${s.t}</div><div class="d">${s.d}</div></div>`).join('');
+document.getElementById('svcGrid').innerHTML=svcHTML;
+document.getElementById('svcGridFull').innerHTML=svcHTML;
+
+const updates=[
+  {t:'Road Maintenance on MG Road',d:'Expected to complete by 30 May. Expect diversions during peak hours.',tm:'10:30 AM'},
+  {t:'Water Supply Maintenance',d:'Scheduled maintenance in North Zone on 28 May.',tm:'09:20 AM'},
+  {t:'Air Quality Alert',d:'AQI may reach moderate levels tomorrow — sensitive groups take care.',tm:'08:45 AM'},
+  {t:'Waste Collection Drive',d:'Extra collection drive in Green Park Area this weekend.',tm:'Yesterday'},
+];
+function renderUpdates(id){document.getElementById(id).innerHTML=updates.map(u=>`<div class="upd-item"><div class="t">${u.t}</div><div class="d">${u.d} · ${u.tm}</div></div>`).join('');}
+renderUpdates('citizenUpdates'); renderUpdates('citizenUpdatesFull');
+
+/* ---------- Citizen Issue Reporting Database Logic ---------- */
+function reqBadge(s){return s==='Resolved'?'b-green':s==='In Progress'?'b-amber':'b-blue';}
+
+function submitReport(ev){
+  ev.preventDefault();
+  const cat = document.getElementById('repCategory').value;
+  const loc = document.getElementById('repLocation').value;
+  const desc = document.getElementById('repDesc').value;
+  
+  const loggedInUserStr = localStorage.getItem('loggedInUser');
+  let reporterName = "Unknown Citizen";
+  if (loggedInUserStr) {
+    const user = JSON.parse(loggedInUserStr);
+    reporterName = user.name || user.identifier;
+  }
+  
+  const newRequest = { 
+    t: cat, 
+    l: loc, 
+    desc: desc,
+    citizenName: reporterName, 
+    status: 'Pending', 
+    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+  };
+  
+  const requests = JSON.parse(localStorage.getItem('smartCityRequests'));
+  requests.unshift(newRequest);
+  localStorage.setItem('smartCityRequests', JSON.stringify(requests));
+  
+  renderRequests();
+  loadAdminDatabase(); 
+  document.getElementById('reportForm').reset();
+  showToast('Issue reported successfully — sent to Admin Dashboard');
+  showSection('citizen','requests');
+  return false;
+}
+
+function deleteCitizenRequest(index) {
+  if (confirm("Are you sure you want to delete this request?")) {
+    let requests = JSON.parse(localStorage.getItem('smartCityRequests')) || [];
+    requests.splice(index, 1);
+    localStorage.setItem('smartCityRequests', JSON.stringify(requests));
+    
+    showToast('Request deleted successfully');
+    renderRequests();
+    loadAdminDatabase(); 
+  }
+}
+
+function renderRequests(){
+  const requests = JSON.parse(localStorage.getItem('smartCityRequests')) || [];
+  
+  document.getElementById('myRequestsPreview').innerHTML = requests.slice(0,3).map((r, i) => `
+    <div class="req-item">
+      <div><div class="t">${r.t}</div><div class="l">${r.l}</div></div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="badge ${reqBadge(r.status)}">${r.status}</span>
+        <button class="btn ghost" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: #ef4444; border-radius: 6px;" onclick="deleteCitizenRequest(${i})">🗑️</button>
+      </div>
+    </div>`).join('');
+    
+  document.getElementById('myRequestsFull').innerHTML = requests.map((r, i) => `
+    <div class="req-item">
+      <div><div class="t">${r.t}</div><div class="l">${r.l}</div></div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="badge ${reqBadge(r.status)}">${r.status}</span>
+        <button class="btn ghost" style="padding: 4px 8px; font-size: 11px; color: #ef4444; border-color: #ef4444; border-radius: 6px;" onclick="deleteCitizenRequest(${i})">${i18nDict[currentLang].btn_delete}</button>
+      </div>
+    </div>`).join('');
+}
+renderRequests();
+
+function loadAdminRequests() {
+  const requests = JSON.parse(localStorage.getItem('smartCityRequests')) || [];
+  const adminAlertTable = document.getElementById('fullAlertTable');
+  
+  const requestRows = requests.map(r => `
+    <tr>
+      <td>📝 Citizen Request</td>
+      <td>${r.t} - ${r.desc || 'No description'} (By: ${r.citizenName || 'Unknown'})</td>
+      <td><span class="badge b-amber">Attention</span></td>
+      <td>${r.l}</td>
+      <td>${r.time}</td>
+      <td><span class="badge ${reqBadge(r.status)}">${r.status}</span></td>
+    </tr>
+  `).join('');
+  
+  adminAlertTable.innerHTML = requestRows + adminAlertTable.innerHTML; 
+  document.getElementById('adminAlertCount').textContent = parseInt(document.getElementById('adminAlertCount').textContent) + requests.length;
+}
+</script>
+</body>
+</html>
